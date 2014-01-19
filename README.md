@@ -1,23 +1,13 @@
-Wireless-IDS
-============
+Wireless IDS [Intrusion Detection System] 
+=========================================
 
-This tool works in Linux environment and required Aircrack-NG suite and TShark to be present in the system which is readily available in BT and Kali.
- 
-Basically the tool will use a wireless interface to capture all the surrounding network traffic and analysed for suspicious activity for
-- Detecting mass deauth sent to client/access point to detect possible WPA attacks..
-- continual sending data to access point using broadcast MAC address which indicate a possibility of WEP attacks 
-- continual communication between client and access point using EAP authentication which indicate the possibility of WPS bruteforce attack by Reaver/WPSCrack
+Wireless IDS is an open source tool written in Python and work on Linux environment. This tool will sniff your surrounding air traffic for suspicious activities such as WEP/WPA/WPS attacking packets. It do the following
+* Detect mass deauthentication sent to client / access point which unreasonable amount indicate possible WPA attack for handshakes.
+* Continual sending data to access point using broadcast MAC address which indicate a possibility of WEP attacks
+* Unreasonable amount of communication between wireless client and access point using EAP authentication which indicate the possibility of WPS bruteforce attack by Reaver / WPSCrack
+* Detection of changes in connection to anther access point which may have the possibility of connection to Rogue AP (User needs to assess the situation whether similar AP name)
 
-At present, it detect this 3 possible attack. I am in the process of adding new function which will detect changes in wireless client connected to another access point (possibility of connected to a Rogue AP). 
+Visit [my Facebook Page](https://www.facebook.com/pages/SYWorks-Programming/281645261863582) for other updated information and tools.
 
-Screenshot can be found at https://www.facebook.com/media/set/?set=a.767725556588881.1073741830.281645261863582
+Read Wiki for installation and other details (https://github.com/SYWorks/wireless-ids/wiki)
 
-To run the script, type
-‘Python wids.py’
-Or
-‘chmod +x wids.py’
-‘./wids.py’
-
-For help, type ‘./wids.py --help’
-
-To check/upgrade, type ‘./wids.py --upgrade’
