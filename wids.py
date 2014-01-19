@@ -5,7 +5,7 @@
 # Written By SY Chua, syworks@gmail.com
 #
 
-appver="1.0, R.1"
+appver="1.0, R.2"
 apptitle="WIDS"
 appDesc="- The Wireless Intrusion Detection System"
 appcreated="07 Jan 2014"
@@ -2960,7 +2960,7 @@ try:
     MONList=IFaceList
     GetAppName()
     CheckLinux()
-    CheckPyVersion("2.7")
+    CheckPyVersion("2.6")
     os.system('clear')
     DisplayAppDetail()
     DisplayDescription()
