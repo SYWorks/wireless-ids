@@ -7,7 +7,7 @@ Wireless IDS is an open source tool written in Python and work on Linux environm
 * Unreasonable amount of communication between wireless client and access point using EAP authentication which indicate the possibility of WPS bruteforce attack by Reaver / WPSCrack
 * Detection of changes in connection to anther access point which may have the possibility of connection to Rogue AP (User needs to assess the situation whether similar AP name)
 
-Visit [my Facebook Page](https://www.facebook.com/pages/SYWorks-Programming/281645261863582) for other updated information and tools.
+Visit [my Facebook Page](https://www.facebook.com/syworks) for other updated information and tools.
 
 Read Wiki for installation and other details (https://github.com/SYWorks/wireless-ids/wiki)
 
