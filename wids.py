@@ -5,16 +5,15 @@
 # Written By SY Chua, syworks@gmail.com
 #
 
-appver="1.0, R.3"
+appver="1.0, R.4"
 apptitle="WIDS"
 appDesc="- The Wireless Intrusion Detection System"
 appcreated="07 Jan 2014"
-appupdated="19 Jan 2014"
+appupdated="21 Jan 2014"
 appnote="by SY Chua, " + appcreated + ", Updated " + appupdated
 
 
 import httplib
-import sys
 import sys,os
 import subprocess
 import random
@@ -2478,8 +2477,6 @@ def CaptureTraffic():
     mcmd2="tshark -i " + str(SELECTED_MON) + " -w " + str(tcpdump_cap) + " -n -t ad -a duration:" + str(TIMEOUT) +  " > /dev/null 2>&1"
     ps2=subprocess.Popen(mcmd2 , shell=True, stdout=subprocess.PIPE, preexec_fn=os.setsid)	
     ps1=subprocess.Popen(mcmd1 , shell=True, stdout=subprocess.PIPE, preexec_fn=os.setsid)	
-
-
     printc ("@",fcolor.SGreen + "Refreshing after " + fcolor.BYellow + str(TimeOut) + fcolor.SGreen + " seconds... please wait..",TimeOut)
     pid1=ps1.pid
     pid2=ps2.pid
@@ -2550,13 +2547,15 @@ def GetMACDetail(FrMAC,ToMAC,AType):
                             if CLIENTS!=1 and ESSID!="" and Privacy!="":
                                 printc (" ",fcolor.BWhite + "[" + fcolor.BBlue + str(FMAC) + fcolor.BWhite + " ] is AP Name [ " + fcolor.BBlue + str(ESSID) + fcolor.BWhite + " ] and Privicy=" + fcolor.BRed + str(Privacy) + fcolor.BWhite + " Cipher=" + fcolor.BRed + str(Cipher) + fcolor.BWhite + " Authentication=" + fcolor.BRed + str(Authentication) + fcolor.BWhite + " Power=" + fcolor.BRed + str(Power) + fcolor.BWhite + "","")
                             else:
-                                printc (" ",fcolor.BWhite + "[" + fcolor.BCyan + str(FMAC) + fcolor.BWhite + " ] is associated with [ " + fcolor.BCyan + str(SMAC) + fcolor.BWhite + " ]","")
+                                if SMAC!="":
+                                    printc (" ",fcolor.BWhite + "[" + fcolor.BCyan + str(FMAC) + fcolor.BWhite + " ] is associated with [ " + fcolor.BCyan + str(SMAC) + fcolor.BWhite + " ]","")
 
                     if ToMAC.find(str(FMAC))!=-1:
                             if CLIENTS!=1:
                                 printc (" ",fcolor.BWhite + "[" + fcolor.BBlue + str(FMAC) + fcolor.BWhite + " ] is AP Name [ " + fcolor.BBlue + str(ESSID) + fcolor.BWhite + " ] and Privicy=" + fcolor.BRed + str(Privacy) + fcolor.BWhite + " Cipher=" + fcolor.BRed + str(Cipher) + fcolor.BWhite + " Authentication=" + fcolor.BRed + str(Authentication) + fcolor.BWhite + " Power=" + fcolor.BRed + str(Power) + fcolor.BWhite + "","")
                             else:
-                                printc (" ",fcolor.BWhite + "[" + fcolor.BCyan + str(FMAC) + fcolor.BWhite + " ] is associated with  [ " + fcolor.BCyan + str(SMAC) + fcolor.BWhite + " ]","")
+                                if SMAC!="":
+                                    printc (" ",fcolor.BWhite + "[" + fcolor.BCyan + str(FMAC) + fcolor.BWhite + " ] is associated with  [ " + fcolor.BCyan + str(SMAC) + fcolor.BWhite + " ]","")
 
                     ESSID=ESSID.lstrip().rstrip().replace("\r","").replace("\n","")
                     if CLIENTS!=1:
@@ -2751,7 +2750,6 @@ def AnalyseCaptured():
                 if STYPE=="WPS":
                     GET_WPS="1"
                     
-
                 if STYPE=="DATA" or STYPE=="QOS" or STYPE=="AUTHENTICATION" or STYPE=="DEAUTHENTICATION" or STYPE=="ASSOCIATION" or STYPE=="DISASSOCIATE" or STYPE=="REASSOCIATION" or STYPE=="REQUEST-TO-SEND" or STYPE=="CLEAR-TO-SEND" or STYPE=="ACKNOWLEDGEMENT" or STYPE=="EAPOL" or STYPE=="WPS":
                     ListSR=0
                     ExistList=-1
@@ -2785,7 +2783,6 @@ def AnalyseCaptured():
                         List_ACK.append(str(GET_ACK))
                         List_EAPOL.append(str(GET_EAPOL))
                         List_WPS.append(str(GET_WPS))
-
 
                     if ExistList!=-1:		# FOUND ON LIST
                         GET_DATA=List_Data[ExistList]
@@ -2860,6 +2857,7 @@ def AnalyseCaptured():
     AWPA=0
     AWEP=0
     AWPS=0
+    ATUN=0
     WPSDetected=0
     if listlen!=0:
         printl(fcolor.BRed + "\r","","")
@@ -2874,8 +2872,26 @@ def AnalyseCaptured():
                 printc (".",fcolor.BGreen + "Deauth Flood detected calling from [ " + fcolor.BBlue + str(FrMAC) + fcolor.BGreen + " ] to [ " + fcolor.BBlue + str(ToMAC) + fcolor.BGreen + " ]  with " + fcolor.BYellow + str(List_Deauth[listsr]) + fcolor.BGreen + " deauth packets","")
                 AType="DEAUTH"
                 RtnESSID=GetMACDetail(FrMAC,ToMAC,AType)
-                AWPA="1"
+                if FrMAC=="00:00:00:00:00:00" or ToMAC=="00:00:00:00:00:00":
+                    ATUN="1"
+                    printc (" ",fcolor.SWhite + "Possible TKIPTUN-NG Signature..","")
+                else:
+                    AWPA="1"
                 printc (" ",fcolor.BGreen + "Handshake Found [ " + fcolor.BBlue + str(List_EAPOL[listsr]) + fcolor.BGreen + " ] ","")
+            else:
+                if int(List_Deauth[listsr])>=0:
+                    FrMAC=str(List_FrMAC[listsr]).replace(" / FF:FF:FF:FF:FF:FF","").replace("FF:FF:FF:FF:FF:FF / ", "").replace("FF:FF:FF:FF:FF:FF","")
+                    ToMAC=str(List_ToMAC[listsr]).replace(" / FF:FF:FF:FF:FF:FF","").replace("FF:FF:FF:FF:FF:FF / ", "").replace("FF:FF:FF:FF:FF:FF","")
+
+                    if FrMAC.find("00:00:00:00:00:00")!=-1 or ToMAC.find("00:00:00:00:00:00")!=-1:
+                        Concern=Concern+1
+                        print ""
+                        printc (".",fcolor.BGreen + "Deauth Flood detected calling from [ " + fcolor.BBlue + str(FrMAC) + fcolor.BGreen + " ] to [ " + fcolor.BBlue + str(ToMAC) + fcolor.BGreen + " ]  with " + fcolor.BYellow + str(List_Deauth[listsr]) + fcolor.BGreen + " deauth packets","")
+                        AType="DEAUTH"
+                        RtnESSID=GetMACDetail(FrMAC,ToMAC,AType)
+                        ATUN="1"
+                        printc (" ",fcolor.SWhite + "Possible TKIPTUN-NG Signature..","")
+                        printc (" ",fcolor.BGreen + "Handshake Found [ " + fcolor.BBlue + str(List_EAPOL[listsr]) + fcolor.BGreen + " ] ","")
 
             if int(List_Data[listsr])>=50:
                 Concern=Concern+1
@@ -2925,6 +2941,8 @@ def AnalyseCaptured():
 	    WText=str(WText) + "WEP / "
         if AWPA=="1":
 	    WText=str(WText) + "WPA / "
+        if ATUN=="1":
+            WText=str(WText) + "TKIPTUN-NG / "
         if AWPS=="1":
             WText=str(WText) + "WPS / "
         if WText!="":
@@ -3023,15 +3041,14 @@ def UpdateClients():
                                         if BSSIDList[xlbs]==str(SMAC) and len(SMAC)==17:
                                             ESSID2=ESSIDList[xlbs]
                                             ESSID=ESSIDList[xlbs]
-
                                         xlbs=xlbs+1
                               
                                     if len(FMAC)==17 and ESTN==FMAC and ESSID!="" and ESSID!=".":
                                         FOUNDBSSID="1"
                                         if ESID!=ESSID and ESSID!="" and ESID!="" and  len(SMAC)==17 and EXAP==SMAC:
                                             print ""
-                                            TOText=fcolor.SGreen + "ESSID for [ " + fcolor.SWhite + str(EXAP) + fcolor.SGreen + " ] changed from [ " +  fcolor.SWhite + str(ESID) + fcolor.SGreen + " ] to  [ " + fcolor.SWhite + str(ESSID) + fcolor.SGreen + " ].."
-                                            printc (" ",TOText,"")
+                                            TOText=fcolor.BWhite + "     ESSID for [ " + fcolor.BBlue + str(EXAP) + fcolor.BWhite + " ] changed from [ " +  fcolor.BYellow + str(ESID) + fcolor.BWhite + " ] to  [ " + fcolor.BYellow + str(ESSID) + fcolor.BWhite + " ].."
+                                            printl (TOText,"","")
                                             ESID=ESSID
                                         if len(SMAC)==17 and EXAP!=SMAC:
                                             print ""
@@ -3071,9 +3088,6 @@ def UpdateClients():
                                         open(tmpfile,"a+b").write(str(ESTN) + ", " + str(EXAP) + ", " + str(ESID)  + "\n")                               
                         os.remove(clientfile)
                         os.rename(tmpfile,clientfile)
-                                  
-
-
 
 def ConvertPackets():
     captured_pcap=tmpdir + "captured"
@@ -3098,10 +3112,6 @@ def RewriteCSV():
                 line=line.replace("\n","")
                 line=line.replace("\00","")
                 open(newcaptured_csv,"a+b").write(line + "\n")
-
-
-
-
 
 from random import randrange
 from math import floor
@@ -3145,6 +3155,7 @@ try:
     CheckRequiredFiles()
     GetParameter("1")
     RETRY=0
+
     ps=subprocess.Popen("ps -A | grep 'airodump-ng'" , shell=True, stdout=subprocess.PIPE)	
     Process=ps.stdout.read()
     if Process!="":
@@ -3181,12 +3192,14 @@ try:
 
     if MonCt==0:
         printc (".",fcolor.SGreen + "Enabling monitoring for [ " + fcolor.BRed + SELECTED_IFACE + fcolor.SGreen + " ]...","")
+
         ps=subprocess.Popen("ifconfig " + str(SELECTED_IFACE) + " down > /dev/null 2>&1", shell=True, stdout=subprocess.PIPE,stderr=open(os.devnull, 'w'))
         ps.wait()
         ps=subprocess.Popen("iwconfig " +  str(SELECTED_IFACE) + " mode monitor > /dev/null 2>&1", shell=True, stdout=subprocess.PIPE,stderr=open(os.devnull, 'w'))
         ps.wait()
         ps=subprocess.Popen("ifconfig " + str(SELECTED_IFACE) + " up > /dev/null 2>&1", shell=True, stdout=subprocess.PIPE,stderr=open(os.devnull, 'w'))
         ps.wait()
+        
         time.sleep (0.5)
         MonCt = GetInterfaceList("MON")
 
@@ -3220,8 +3233,6 @@ try:
         x=x+1
     exit()
 
-
-
 except (KeyboardInterrupt, SystemExit):
     printd("KeyboardInterrupt - " + str(KeyboardInterrupt) + "\n        SystemExit - " + str(SystemExit))
     print ""
@@ -3250,13 +3261,11 @@ except (KeyboardInterrupt, SystemExit):
             ps.wait()
             ps=subprocess.Popen("ifconfig " + str(IFaceList[Y]) + " up > /dev/null 2>&1", shell=True, stdout=subprocess.PIPE,stderr=open(os.devnull, 'w'))
             ps.wait()
-
             time.sleep(0.1)
         Y=Y+1
     ps=subprocess.Popen("killall 'airodump-ng' > /dev/null 2>&1" , shell=True, stdout=subprocess.PIPE)	
     time.sleep(0.1)
     ps=subprocess.Popen("killall 'tshark' > /dev/null 2>&1" , shell=True, stdout=subprocess.PIPE)	
     time.sleep(0.1)
-    printc ("i", fcolor.BWhite + "Please support and like my page at " + fcolor.BBlue + "https://www.facebook.com/28164526863582" +fcolor.BWhite + " (SYWorks-Programming)","")
+    printc ("i", fcolor.BWhite + "Please support and like my page at " + fcolor.BBlue + "https://www.facebook.com/syworks" +fcolor.BWhite + " (SYWorks-Programming)","")
     print ""
-   
