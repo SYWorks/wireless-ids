@@ -5,11 +5,11 @@
 # Written By SY Chua, syworks@gmail.com
 #
 
-appver="1.0, R.4"
+appver="1.0, R.5"
 apptitle="WIDS"
 appDesc="- The Wireless Intrusion Detection System"
 appcreated="07 Jan 2014"
-appupdated="21 Jan 2014"
+appupdated="24 Jan 2014"
 appnote="by SY Chua, " + appcreated + ", Updated " + appupdated
 
 
@@ -739,8 +739,8 @@ def DisplayDescription():
     print fcolor.SWhite + "     This application sniff the surrounding wireless network for any suspicious packets detected such as high amount of"
     print fcolor.SWhite + "     association/authentication packets, suspicious data sent via broadcast address, unreasonable high amount of deauth"
     print fcolor.SWhite + "     packets or EAP association  packets  which  in the other way indicated possible way indicated possible WEP/WPA/WPS"
-    print fcolor.SWhite + "     attacks found.."
-    print fcolor.BWhite + "     New !! " + fcolor.SWhite + "Detecting connected client for possible Rogue AP"
+    print fcolor.SWhite + "     attacks found, detecting connected client for possible Rogue AP"
+    print fcolor.BWhite + "     New !! " + fcolor.SWhite + "Detection of Possible Rogue Access Point"
     print ""
 
 def DisplayDetailHelp():
@@ -791,6 +791,8 @@ def GetParameter(cmdDisplay):
     global DebugMode
     global AllArguments
     global SELECTED_IFACE
+    global ReadPacketOnly
+    ReadPacketOnly=""
     SELECTED_IFACE=""
     global SELECTED_MON
     SELECTED_MON=""
@@ -834,6 +836,9 @@ def GetParameter(cmdDisplay):
                     DisplayDetailHelp()
                     Err=0
                     exit()
+                elif arg=="-ro":
+                    Err=0
+                    ReadPacketOnly="1"
                 elif arg=="--update":
                     Err=0
                     GetUpdate("1")
@@ -1267,34 +1272,6 @@ def GetInterfaceList(cmdMode):
                     StatusList.append(STATUS)
                     UpDownList.append(IFUP)
                     ISerialList.append(str(IFaceCount))
-            if MODE=="AD-HOC":
-                if cmdMode=="ADH":
-                    IFaceCount=IFaceCount+1
-                    ModeList.append(MODEN)
-                    IFaceList.append(IFACE)
-                    IEEEList.append(IEEE)
-                    MACList.append(MACADDR)
-                    IPList.append(IPADDR)
-                    IPv6List.append(IPV6ADDR)
-                    BCastList.append(BCAST)
-                    MaskList.append(MASK)
-                    StatusList.append(STATUS)
-                    UpDownList.append(IFUP)
-                    ISerialList.append(str(IFaceCount))
-            if cmdMode=="IP" and BCAST!="":
-                if IPV6ADDR!="" or IPADDR!="":
-                    IFaceCount=IFaceCount+1
-                    ModeList.append(MODEN)
-                    IFaceList.append(IFACE)
-                    IEEEList.append(IEEE)
-                    MACList.append(MACADDR)
-                    IPList.append(IPADDR)
-                    IPv6List.append(IPV6ADDR)
-                    BCastList.append(BCAST) 
-                    MaskList.append(MASK)
-                    StatusList.append(STATUS)
-                    UpDownList.append(IFUP)
-                    ISerialList.append(str(IFaceCount))
             if cmdMode=="CON" and IPADDR!="" and GATEWAY!="" and BCAST!="":
                 IFaceCount=IFaceCount+1
                 ModeList.append(MODEN)
@@ -1604,6 +1581,8 @@ def CombineListing(List1, List2, List3, List4, List5, List6, List7, List8):
 
 
 def QuestionFromList(ListTitle,ListTitleSpace,ListUse,AskQuestion,RtnType):
+#   RtnType "0" = Return Selected Number
+#           "1" = Return first field of selected list number
     global ListingIndex
     ListingIndex=""
     bcolor=fcolor.SWhite
@@ -2477,6 +2456,7 @@ def CaptureTraffic():
     mcmd2="tshark -i " + str(SELECTED_MON) + " -w " + str(tcpdump_cap) + " -n -t ad -a duration:" + str(TIMEOUT) +  " > /dev/null 2>&1"
     ps2=subprocess.Popen(mcmd2 , shell=True, stdout=subprocess.PIPE, preexec_fn=os.setsid)	
     ps1=subprocess.Popen(mcmd1 , shell=True, stdout=subprocess.PIPE, preexec_fn=os.setsid)	
+
     printc ("@",fcolor.SGreen + "Refreshing after " + fcolor.BYellow + str(TimeOut) + fcolor.SGreen + " seconds... please wait..",TimeOut)
     pid1=ps1.pid
     pid2=ps2.pid
@@ -2504,6 +2484,7 @@ def GetMACDetail(FrMAC,ToMAC,AType):
     global Privacy
     global Cipher
     Privacy=""
+    PrivacyBK=""
     Cipher=""
     CLIENTS=0
     captured_csv=tmpdir + "CapturedListing.csv"
@@ -2538,24 +2519,36 @@ def GetMACDetail(FrMAC,ToMAC,AType):
 
                     if FS=="Station MAC":
                         CLIENTS=1
- 
-
-                     
-
                     if len(FMAC)==17:
                         if FrMAC.find(str(FMAC))!=-1:
-                            if CLIENTS!=1 and ESSID!="" and Privacy!="":
+                            if CLIENTS!=1 and Privacy!="":
+                                if ESSID=="":
+                                    ESSID=fcolor.IGray + "<<No ESSID>>"
+                                PrivacyBK=Privacy
                                 printc (" ",fcolor.BWhite + "[" + fcolor.BBlue + str(FMAC) + fcolor.BWhite + " ] is AP Name [ " + fcolor.BBlue + str(ESSID) + fcolor.BWhite + " ] and Privicy=" + fcolor.BRed + str(Privacy) + fcolor.BWhite + " Cipher=" + fcolor.BRed + str(Cipher) + fcolor.BWhite + " Authentication=" + fcolor.BRed + str(Authentication) + fcolor.BWhite + " Power=" + fcolor.BRed + str(Power) + fcolor.BWhite + "","")
-                            else:
-                                if SMAC!="":
-                                    printc (" ",fcolor.BWhite + "[" + fcolor.BCyan + str(FMAC) + fcolor.BWhite + " ] is associated with [ " + fcolor.BCyan + str(SMAC) + fcolor.BWhite + " ]","")
+                            if SMAC!="" and CLIENTS==1:
+                                if SMAC=="(not associated)":
+                                    printc (" ",fcolor.BWhite + "[" + fcolor.BCyan + str(FMAC) + fcolor.BWhite + " ] is not associated access point.","")
+                                else:
+                                   printc (" ",fcolor.BWhite + "[" + fcolor.BCyan + str(FMAC) + fcolor.BWhite + " ] is associated with access point [ " + fcolor.BCyan + str(SMAC) + fcolor.BWhite + " ]","")
+                        if FrMAC.find(str(SMAC))!=-1:
+                            if FMAC!="" and CLIENTS==1 and SMAC!="(not associated)":
+                                printc (" ",fcolor.BWhite + "[" + fcolor.BCyan + str(FMAC) + fcolor.BWhite + " ] is associated with client [ " + fcolor.BCyan + str(SMAC) + fcolor.BWhite + " ]","")
+
+
 
                     if ToMAC.find(str(FMAC))!=-1:
                             if CLIENTS!=1:
+                                if ESSID=="":
+                                    ESSID=fcolor.IGray + "<<No ESSID>>"
                                 printc (" ",fcolor.BWhite + "[" + fcolor.BBlue + str(FMAC) + fcolor.BWhite + " ] is AP Name [ " + fcolor.BBlue + str(ESSID) + fcolor.BWhite + " ] and Privicy=" + fcolor.BRed + str(Privacy) + fcolor.BWhite + " Cipher=" + fcolor.BRed + str(Cipher) + fcolor.BWhite + " Authentication=" + fcolor.BRed + str(Authentication) + fcolor.BWhite + " Power=" + fcolor.BRed + str(Power) + fcolor.BWhite + "","")
+                                PrivacyBK=Privacy
                             else:
                                 if SMAC!="":
-                                    printc (" ",fcolor.BWhite + "[" + fcolor.BCyan + str(FMAC) + fcolor.BWhite + " ] is associated with  [ " + fcolor.BCyan + str(SMAC) + fcolor.BWhite + " ]","")
+                                    if SMAC=="(not associated)":
+                                        printc (" ",fcolor.BWhite + "[" + fcolor.BCyan + str(FMAC) + fcolor.BWhite + " ] is not associated access point.","")
+                                    else:
+                                        printc (" ",fcolor.BWhite + "[" + fcolor.BCyan + str(FMAC) + fcolor.BWhite + " ] is associated with access point [ " + fcolor.BCyan + str(SMAC) + fcolor.BWhite + " ]","")
 
                     ESSID=ESSID.lstrip().rstrip().replace("\r","").replace("\n","")
                     if CLIENTS!=1:
@@ -2577,9 +2570,16 @@ def GetMACDetail(FrMAC,ToMAC,AType):
                         if SkipESSID==1 and ESSID!="":
                             if FileESSID!=ESSID:
                                 ModiESSID=ModiESSID + fcolor.BGreen + "ESSID of [ " + fcolor.BBlue + str(FMAC) + fcolor.BGreen + " ] changed from [ " + fcolor.BRed + str(FileESSID) + fcolor.BGreen + " ] to [ " + fcolor.BRed + str(ESSID) + fcolor.BGreen + " ].\n"
-    return ModiESSID;
+
+    if PrivacyBK!="" and PrivacyBK.find("WPA")!=-1:
+        PrivacyBK="WPA"
+    return PrivacyBK
     
-     
+
+def RemoveUnwantMAC(MACAddr):
+    MACAddr=MACAddr.replace(" / FF:FF:FF:FF:FF:FF","").replace("FF:FF:FF:FF:FF:FF / ", "").replace("FF:FF:FF:FF:FF:FF","")
+    MACAddr=MACAddr.replace(" / FF:FF:FF:FF:FF:ED","").replace("FF:FF:FF:FF:FF:ED / ", "").replace("FF:FF:FF:FF:FF:ED","")
+    return MACAddr;
 
 def AnalyseCaptured():
     global List_FrMAC
@@ -2595,6 +2595,15 @@ def AnalyseCaptured():
     global List_ACK
     global List_EAPOL
     global List_WPS
+    global List_Beacon
+    global List_SSID
+    global List_SSIDCT
+    global List_IsAP
+    global List_PResp
+    global List_PReq
+    global List_ProbeName
+    global List_NULL
+    
 
     List_FrMAC=[]
     List_ToMAC=[]
@@ -2609,7 +2618,15 @@ def AnalyseCaptured():
     List_ACK=[]
     List_EAPOL=[]
     List_WPS=[]
-
+    List_Beacon=[]
+    List_SSID=[]
+    List_SSIDCT=[]
+    List_IsAP=[]
+    List_PResp=[]
+    List_PReq=[]
+    List_ProbeName=[]
+    List_NULL=[]
+    BAK_FR_MAC=""
     tcpdump_log=tmpdir + "tcpdump.log"
     resultlog=tmpdir + "Result.log"
     resultlist=tmpdir + "ResultList.log"
@@ -2629,7 +2646,7 @@ def AnalyseCaptured():
         for line in f:
             linecount=linecount+1
             DisplayCt=DisplayCt+1
-            if DisplayCt>30:
+            if DisplayCt>50:
                 completed=Percent(linecount / float(TotalLine),2)
                 BRes=printl(fcolor.SGreen + "Analysing Packets : " + str(completed) + ".." ,"2",BRes)
                 DisplayCt=0
@@ -2639,7 +2656,8 @@ def AnalyseCaptured():
             line=line.replace("(BSSID)","")
             sl=len(line)
             if sl>=15:
-                line=line + " . . . . . . . . . . . . . . . . . . . . . . . . . . ."
+                line=line.replace("[Malformed Packet]", "")
+                line=line + ", ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., ., .,"
                 line=line.replace("\r","")
                 FoundType=""
 
@@ -2647,8 +2665,9 @@ def AnalyseCaptured():
                 DTYPE=""
                 DTYPE2=""
                 DTYPE3=""
-
-
+                SSID=""
+                PSSID=""
+                AESSID=""
                 FR_MAC=line.split()[3].replace(',','').upper()
                 TO_MAC=line.split()[5].replace(',','').upper()
                 TO_MAC2=line.split()[4].replace(',','').upper()
@@ -2658,6 +2677,27 @@ def AnalyseCaptured():
                 WPS1=line.split()[6].replace(',','').replace('(','').upper()
                 WPS2=line.split()[11].replace(',','').replace('(','').upper()
                 WPS3=line.split()[12].replace(',','').replace('(','').upper()
+                SSID=line.split(', ')[5].replace(',','').replace('(','')
+                PSSID=line.split(', ')[4].replace(',','').replace('(','')
+
+                if SSID==".":
+                    SSID=""
+
+                if PSSID!="" and PSSID[:5]=="SSID=":
+                    if PSSID[-18:]=="[Malformed Packet]":
+                        PSSID=PSSID[:-18]
+                    PSSID=PSSID[5:]
+                else:
+                    PSSID=""
+
+
+                if SSID!="" and SSID[:5]=="SSID=":
+                    if SSID[-18:]=="[Malformed Packet]":
+                        print "Found [Malformed Packet]"
+                        SSID=SSID[:-18]
+                    SSID=SSID[5:]
+                    AESSID=SSID
+                    SSID=CheckSSIDChr(SSID)
 
 
                 if line.find(str('EAPOL'))!=-1:
@@ -2675,6 +2715,14 @@ def AnalyseCaptured():
                     DTYPEA=str(DTYPE2) + " " + str(DTYPE)
                     if DTYPEA=="RESERVED FRAME":
                         STYPE=DTYPEA
+
+                if DTYPE=="NULL" and DTYPE3=="FUNCTION":
+                    DTYPEA=str(DTYPE) + " " + str(DTYPE3)
+                    STYPE=DTYPEA + "-"
+
+                if DTYPE=="BEACON" and DTYPE3=="FRAME":
+                    DTYPEA=str(DTYPE) + " " + str(DTYPE3)
+                    STYPE=DTYPEA
 
                 DTYPEA=str(DTYPE) + " " + str(DTYPE3)
                 if DTYPEA=="PROBE RESPONSE":
@@ -2698,13 +2746,14 @@ def AnalyseCaptured():
                     TO_MAC2=""
                 if len(TO_MAC)!=17:
                     TO_MAC=""
-
+                if FR_MAC!="":
+                    BAK_FR_MAC=FR_MAC
                 open(resultlog,"a+b").write("Line : " + str(line) + "\n")
                 open(resultlog,"a+b").write("FoundType : " + str(FoundType) + "\n")
                 open(resultlog,"a+b").write("STYPE : " + str(STYPE) + "\n")
                 open(resultlog,"a+b").write("BCast  : " + str(BCast) + "\n")
                 open(resultlog,"a+b").write("FR_MAC : " + str(FR_MAC) + " = " + str(len(FR_MAC))+ "\n")
-                open(resultlog,"a+b").write("TO_MAC : " + str(TO_MAC) + str(len(TO_MAC)) +  "\n")
+                open(resultlog,"a+b").write("TO_MAC : " + str(TO_MAC) + " = " + str(len(TO_MAC)) +  "\n")
                 open(resultlog,"a+b").write("TO_MAC2 : " + str(TO_MAC2) + str(len(TO_MAC2)) +"\n")
                 open(resultlog,"a+b").write("DTYPE  : " + str(DTYPE) + "\n")
                 open(resultlog,"a+b").write("DTYPE2  : " + str(DTYPE2) + "\n")
@@ -2712,6 +2761,9 @@ def AnalyseCaptured():
                 open(resultlog,"a+b").write("WPS1  : " + str(WPS1) + "\n")
                 open(resultlog,"a+b").write("WPS2  : " + str(WPS2) + "\n")
                 open(resultlog,"a+b").write("WPS3  : " + str(WPS3) + "\n")
+                open(resultlog,"a+b").write("SSID  : " + str(SSID) + "\n")
+                open(resultlog,"a+b").write("PSSID : " + str(PSSID) + "\n")
+                open(resultlog,"a+b").write("AESSID: " + str(AESSID) + "\n")
                 open(resultlog,"a+b").write("-----------------------------------------------------" + "\n")
 
                 GET_DATA="0"
@@ -2725,6 +2777,10 @@ def AnalyseCaptured():
                 GET_ACK="0"
                 GET_EAPOL="0"
                 GET_WPS="0"
+                GET_BEACON="0"
+                GET_PRESP="0"
+                GET_PRQX="0"
+                GET_NULL="0"
 
                 if STYPE=="DATA" or STYPE=="QOS":
                     if TO_MAC=="FF:FF:FF:FF:FF:FF":
@@ -2745,31 +2801,43 @@ def AnalyseCaptured():
                     GET_CTS="1"
                 if STYPE=="ACKNOWLEDGEMENT":
                     GET_ACK="1"
+                if STYPE=="BEACON FRAME":
+                    GET_BEACON="1"
                 if STYPE=="EAPOL":
                     GET_EAPOL="1"
                 if STYPE=="WPS":
                     GET_WPS="1"
+                if STYPE=="PROBE RESPONSE":
+                    GET_PRESP="1"
+                if STYPE=="PROBE REQUEST":
+                    GET_PRQX="1"
+                if STYPE=="NULL FUNCTION":
+                    GET_NULL="1"
                     
-                if STYPE=="DATA" or STYPE=="QOS" or STYPE=="AUTHENTICATION" or STYPE=="DEAUTHENTICATION" or STYPE=="ASSOCIATION" or STYPE=="DISASSOCIATE" or STYPE=="REASSOCIATION" or STYPE=="REQUEST-TO-SEND" or STYPE=="CLEAR-TO-SEND" or STYPE=="ACKNOWLEDGEMENT" or STYPE=="EAPOL" or STYPE=="WPS":
+                if STYPE=="DATA" or STYPE=="QOS" or STYPE=="AUTHENTICATION" or STYPE=="DEAUTHENTICATION" or STYPE=="ASSOCIATION" or STYPE=="DISASSOCIATE" or STYPE=="REASSOCIATION" or STYPE=="REQUEST-TO-SEND" or STYPE=="CLEAR-TO-SEND" or STYPE=="ACKNOWLEDGEMENT" or STYPE=="EAPOL" or STYPE=="WPS" or STYPE=="BEACON FRAME" or STYPE=="PROBE RESPONSE" or STYPE=="PROBE REQUEST" or STYPE=="NULL FUNCTION":
                     ListSR=0
                     ExistList=-1
                     ListLen=len(List_FrMAC)
                     if ListLen!=0:
                         while ListSR<ListLen:
-                            if List_FrMAC[ListSR]==FR_MAC and len(FR_MAC)==17:
-                                    ExistList=ListSR
-                                    if List_ToMAC[ListSR]=="" and TO_MAC!="":
-                                        List_ToMAC[ListSR]=str(TO_MAC)
- 
-                                    if List_ToMAC[ListSR].find(TO_MAC)==-1 and len(TO_MAC)==17:
-                                        List_ToMAC[ListSR]=List_ToMAC[ListSR] + " / " + str(TO_MAC)
-                            if List_ToMAC[ListSR]==TO_MAC and len(TO_MAC)==17:
-                                ExistList=ListSR
+                            if len(FR_MAC)==17 and len(TO_MAC)==17:
+                               if List_FrMAC[ListSR]==FR_MAC and List_ToMAC[ListSR].find(TO_MAC)!=-1:
+                                   ExistList=ListSR
+
+                               if List_FrMAC[ListSR]==FR_MAC and List_ToMAC[ListSR].find(TO_MAC)==-1 and ExistList==-1:
+                                   List_ToMAC[ListSR]=List_ToMAC[ListSR] + " / " + str(TO_MAC)
+                                   ExistList=ListSR
+
+                            if len(FR_MAC)==0 and len(TO_MAC)==17 and ExistList==-1:
+                                if List_FrMAC[ListSR]==TO_MAC:
+                                   ExistList=ListSR
+
                             if ExistList!=-1:
                                 ListSR=ListLen
                             ListSR=ListSR+1
+
 		         
-                    if ExistList==-1 and len(FR_MAC)==17 and len(TO_MAC)==17:		# NOT FOUND ON LIST
+                    if ExistList==-1 and len(FR_MAC)==17:   # and len(TO_MAC)==17:		# NOT FOUND ON LIST
                         List_FrMAC.append(str(FR_MAC))
                         List_ToMAC.append(str(TO_MAC))
                         List_Data.append(str(GET_DATA))
@@ -2783,7 +2851,17 @@ def AnalyseCaptured():
                         List_ACK.append(str(GET_ACK))
                         List_EAPOL.append(str(GET_EAPOL))
                         List_WPS.append(str(GET_WPS))
+                        List_NULL.append(str(GET_NULL))
+                        List_Beacon.append(str(GET_BEACON))
+                        List_PResp.append(str(GET_PRESP))
+                        List_PReq.append(str(GET_PRQX))
+                        List_SSID.append(str(SSID) + ", ")
+                        List_ProbeName.append(str(PSSID) + ", ")
 
+                        if AESSID!="":
+                            List_IsAP.append("Yes")
+                        else:
+                            List_IsAP.append("No")
                     if ExistList!=-1:		# FOUND ON LIST
                         GET_DATA=List_Data[ExistList]
                         GET_AUTH=List_Auth[ExistList]
@@ -2796,7 +2874,52 @@ def AnalyseCaptured():
                         GET_ACK=List_ACK[ExistList]
                         GET_EAPOL=List_EAPOL[ExistList]
                         GET_WPS=List_WPS[ExistList]
+                        GET_BEACON=List_Beacon[ExistList]
+                        GET_PRESP=List_PResp[ExistList]
+                        GET_PRQX=List_PReq[ExistList]
+                        GET_NULL=List_NULL[ExistList]
 
+
+                        SSID_List=[]
+                        if List_SSID[ExistList]!="":
+                            List_SSIDS=str(List_SSID[ExistList])
+                            SSID_List=List_SSIDS.split(", ")
+
+                        ProbeName_List=[]
+                        if List_ProbeName[ExistList]!="":
+                            List_ProbeNameS=str(List_ProbeName[ExistList])
+                            ProbeName_List=List_ProbeNameS.split(", ")
+
+                        if SSID!="":
+                            List_IsAP[ExistList]="Yes"
+                               
+                        lSSID=len(SSID_List)
+                        lsid=0
+                        FoundSSID="0"
+                        if lSSID!=0 and SSID!="":
+                            while lsid<lSSID:
+                                if SSID_List[lsid]!="" and SSID_List[lsid]==str(SSID):
+                                    FoundSSID="1"
+                                    lsid=lSSID
+                                lsid=lsid+1
+                            if FoundSSID=="0":
+                                if List_SSID[ExistList]==", ":
+                                    List_SSID[ExistList]=""
+                                if SSID!="Broadcast":
+                                    List_SSID[ExistList]=List_SSID[ExistList] + str(SSID) + ", "
+                        lSSID=len(ProbeName_List)
+                        lsid=0
+                        FoundProbeName="0"
+                        if lSSID!=0 and PSSID!="":
+                            while lsid<lSSID:
+                                if ProbeName_List[lsid]!="" and ProbeName_List[lsid]==str(PSSID):
+                                    FoundProbeName="1"
+                                    lsid=lSSID
+                                lsid=lsid+1
+                            if FoundProbeName=="0":
+                                if List_ProbeName[ExistList]==", ":
+                                    List_ProbeName[ExistList]=""
+                                List_ProbeName[ExistList]=List_ProbeName[ExistList] + str(PSSID) + ", "
                         if STYPE=="DATA" or STYPE=="QOS":
                             if TO_MAC=="FF:FF:FF:FF:FF:FF":
                                 GET_DATA=str(int(GET_DATA) + 1)
@@ -2820,6 +2943,15 @@ def AnalyseCaptured():
                             GET_EAPOL=str(int(GET_EAPOL) + 1)
                         if STYPE=="WPS":
                             GET_WPS=str(int(GET_WPS) + 1)
+                        if STYPE=="BEACON FRAME":
+                            GET_BEACON=str(int(GET_BEACON) + 1)
+                        if STYPE=="PROBE RESPONSE":
+                            GET_PRESP=str(int(GET_PRESP) + 1)
+                        if STYPE=="PROBE REQUEST":
+                            GET_PRQX=str(int(GET_PRQX) + 1)
+                        if STYPE=="NULL FUNCTION":
+                            GET_NULL=str(int(GET_NULL) + 1)
+
                         List_Data[ExistList]=GET_DATA
                         List_Auth[ExistList]=GET_AUTH
                         List_Deauth[ExistList]=GET_DEAUTH
@@ -2831,8 +2963,48 @@ def AnalyseCaptured():
                         List_ACK[ExistList]=GET_ACK
                         List_EAPOL[ExistList]=GET_EAPOL
                         List_WPS[ExistList]=GET_WPS
+                        List_Beacon[ExistList]=GET_BEACON
+                        List_PResp[ExistList]=GET_PRESP
+                        List_PReq[ExistList]=GET_PRQX
+                        List_NULL[ExistList]=GET_NULL
 
+                        if SSID!="" and List_SSID[ExistList]=="":
+                            List_SSID[ExistList]=SSID + ", "
+                            List_IsAP[ExistList]="Yes"
+
+                        if PSSID!="" and List_ProbeName[ExistList]=="":
+                            List_ProbeName[ExistList]=PSSID + ", "
+
+                        if AESSID!="":
+                            List_IsAP[ExistList]="Yes"
                     ExistList=-1
+
+    x=0
+    while x<len(List_FrMAC):
+        SSID_CT="0"
+        if List_SSID[x]!="":
+            if List_SSID[x][-2:]==", ":
+                List_SSID[x]=List_SSID[x][:-2]
+                List_SSID[x]=List_SSID[x].replace("Broadcast, ","").replace("Broadcast","")
+                SSID_List=List_SSID[x].split(", ")
+                SSID_CT=str(len(SSID_List))
+        if List_ProbeName[x]!="":
+            if List_ProbeName[x][-2:]==", ":
+                List_ProbeName[x]=List_ProbeName[x][:-2]
+                if List_ProbeName[x]!="" and List_SSID[x]!="":
+                    if List_Beacon==0:
+                        List_SSID[x]=""
+                        List_IsAP[x]="No"
+
+        if List_SSID[x]=="":
+            SSID_CT="0"
+
+ 
+        
+        List_SSIDCT.append(str(SSID_CT))
+        x=x+1
+
+
     printl(fcolor.BRed + "                                           ","","")
     printl(fcolor.BRed + "     Analysing Completed..\r","","")
 
@@ -2843,11 +3015,14 @@ def AnalyseCaptured():
     DateTimeStamp=datetime.datetime.fromtimestamp(ts).strftime('%d/%m/%Y %H:%M:%S')
     open(resultlist,"wb").write(tcpdump_log + "\n")
     open(resultlist,"a+b").write("Date/Time\t:" + str(DateTimeStamp) + "\n")
-    open(resultlist,"a+b").write("SN\tFR MAC \t\t\tData \tAuth \tDeauth \tAssoc \tR.Asc \tD.Asc \tRTS \tCTS \tACK \tEAPOL \tWPS \tTo MAC" + "\n")
     x=0
     l=len(List_FrMAC)
     while x<l:
-        open(resultlist,"a+b").write(str(x) + "\t" + List_FrMAC[x] + "\t" + List_Data[x] + "\t"  + List_Auth[x] + "\t"  + List_Deauth[x] + "\t"  + List_Assoc[x] + "\t"  + List_Reassoc[x] + "\t"  + List_Disassoc[x] + "\t"  + List_RTS[x] + "\t"  + List_CTS[x] + "\t"  + List_ACK[x] + "\t"   + List_EAPOL[x] + "\t"   + List_WPS[x] + "\t" + List_ToMAC[x] + "\n")
+        open(resultlist,"a+b").write("SN\tFR MAC \t\t\tBF   \tIsAP? \tECT  \tData \tAuth \tDeauth \tAssoc \tR.Asc \tD.Asc \tRTS \tCTS \tACK \tEAPOL \tWPS \tRQX \tResp \tNULL" + "\n")
+        open(resultlist,"a+b").write(str(x) + "\t" + List_FrMAC[x] + "\t" + List_Beacon[x] + "\t" + List_IsAP[x] + "\t" + List_SSIDCT[x] + "\t" + List_Data[x] + "\t"  + List_Auth[x] + "\t"  + List_Deauth[x] + "\t"  + List_Assoc[x] + "\t"  + List_Reassoc[x] + "\t"  + List_Disassoc[x] + "\t"  + List_RTS[x] + "\t"  + List_CTS[x] + "\t"  + List_ACK[x] + "\t"   + List_EAPOL[x] + "\t"   + List_WPS[x] + "\t" + List_PReq[x] + "\t" + List_PResp[x] + "\t" + List_NULL[x] + "\n")
+        open(resultlist,"a+b").write("ESSID\t" + List_SSID[x] + "\n")
+        open(resultlist,"a+b").write("Probe\t" + List_ProbeName[x] + "\n")
+        open(resultlist,"a+b").write("DEST\t" + List_ToMAC[x] + "\n\n")
         x=x+1
     open(resultlist,"a+b").write("" + "\n\n")
 
@@ -2863,27 +3038,27 @@ def AnalyseCaptured():
         printl(fcolor.BRed + "\r","","")
         while listsr<listlen:
             if int(List_Deauth[listsr])>=10:
-                FrMAC=str(List_FrMAC[listsr]).replace(" / FF:FF:FF:FF:FF:FF","").replace("FF:FF:FF:FF:FF:FF / ", "").replace("FF:FF:FF:FF:FF:FF","")
-                ToMAC=str(List_ToMAC[listsr]).replace(" / FF:FF:FF:FF:FF:FF","").replace("FF:FF:FF:FF:FF:FF / ", "").replace("FF:FF:FF:FF:FF:FF","")
+                FrMAC=RemoveUnwantMAC(str(List_FrMAC[listsr]))
+                ToMAC=RemoveUnwantMAC(str(List_ToMAC[listsr]))
                 Concern=Concern+1
                 if ToMAC=="":
                     ToMAC = fcolor.BRed + "Broadcast"
                 print ""
                 printc (".",fcolor.BGreen + "Deauth Flood detected calling from [ " + fcolor.BBlue + str(FrMAC) + fcolor.BGreen + " ] to [ " + fcolor.BBlue + str(ToMAC) + fcolor.BGreen + " ]  with " + fcolor.BYellow + str(List_Deauth[listsr]) + fcolor.BGreen + " deauth packets","")
                 AType="DEAUTH"
-                RtnESSID=GetMACDetail(FrMAC,ToMAC,AType)
+                Privacy=GetMACDetail(FrMAC,ToMAC,AType)
                 if FrMAC=="00:00:00:00:00:00" or ToMAC=="00:00:00:00:00:00":
                     ATUN="1"
                     printc (" ",fcolor.SWhite + "Possible TKIPTUN-NG Signature..","")
                 else:
-                    AWPA="1"
-                printc (" ",fcolor.BGreen + "Handshake Found [ " + fcolor.BBlue + str(List_EAPOL[listsr]) + fcolor.BGreen + " ] ","")
+                    if str(Privacy)=="WPA" or int(List_EAPOL[listsr])>0:
+                        AWPA="1"
+                        printc (" ",fcolor.BGreen + "Handshake Found [ " + fcolor.BBlue + str(List_EAPOL[listsr]) + fcolor.BGreen + " ] ","")
             else:
                 if int(List_Deauth[listsr])>=0:
-                    FrMAC=str(List_FrMAC[listsr]).replace(" / FF:FF:FF:FF:FF:FF","").replace("FF:FF:FF:FF:FF:FF / ", "").replace("FF:FF:FF:FF:FF:FF","")
-                    ToMAC=str(List_ToMAC[listsr]).replace(" / FF:FF:FF:FF:FF:FF","").replace("FF:FF:FF:FF:FF:FF / ", "").replace("FF:FF:FF:FF:FF:FF","")
-
-                    if FrMAC.find("00:00:00:00:00:00")!=-1 or ToMAC.find("00:00:00:00:00:00")!=-1:
+                    FrMAC=RemoveUnwantMAC(str(List_FrMAC[listsr]))
+                    ToMAC=RemoveUnwantMAC(str(List_ToMAC[listsr]))
+                    if List_FrMAC[listsr].find("00:00:00:00:00:00")!=-1 or List_ToMAC[listsr].find("00:00:00:00:00:00")!=-1:
                         Concern=Concern+1
                         print ""
                         printc (".",fcolor.BGreen + "Deauth Flood detected calling from [ " + fcolor.BBlue + str(FrMAC) + fcolor.BGreen + " ] to [ " + fcolor.BBlue + str(ToMAC) + fcolor.BGreen + " ]  with " + fcolor.BYellow + str(List_Deauth[listsr]) + fcolor.BGreen + " deauth packets","")
@@ -2895,27 +3070,35 @@ def AnalyseCaptured():
 
             if int(List_Data[listsr])>=50:
                 Concern=Concern+1
-                FrMAC=str(List_FrMAC[listsr]).replace(" / FF:FF:FF:FF:FF:FF","").replace("FF:FF:FF:FF:FF:FF / ", "").replace("FF:FF:FF:FF:FF:FF","")
-                ToMAC=str(List_ToMAC[listsr]).replace(" / FF:FF:FF:FF:FF:FF","").replace("FF:FF:FF:FF:FF:FF / ", "").replace("FF:FF:FF:FF:FF:FF","")
-                ToMAC=str(ToMAC).replace(" / FF:FF:FF:FF:FF:7F","").replace("FF:FF:FF:FF:FF:7F / ", "").replace("FF:FF:FF:FF:FF:7F","")
+                FrMAC=RemoveUnwantMAC(str(List_FrMAC[listsr]))
+                ToMAC=RemoveUnwantMAC(str(List_ToMAC[listsr]))
+                if ToMAC=="":
+                    ToMAC="Broadcast"
                 print ""
                 printc (".",fcolor.BGreen + "Unusual Data sending from from [ " + fcolor.BBlue + str(FrMAC) + fcolor.BGreen + " ] to [ " + fcolor.BBlue + str(ToMAC) + fcolor.BGreen + " ] with " + fcolor.BYellow + str(List_Data[listsr]) + fcolor.BGreen +  " Broadcast data packets","")
-                AWEP="1"
                 AType="BCDATA"
-                RtnESSID=GetMACDetail(FrMAC,ToMAC,AType)
+                Privacy=GetMACDetail(FrMAC,ToMAC,AType)
+                if str(Privacy)=="WEP":
+                    AWEP="1"
             if int(List_Auth[listsr])>=3:
                 Concern=Concern+1
-                FrMAC=str(List_FrMAC[listsr]).replace(" / FF:FF:FF:FF:FF:FF","").replace("FF:FF:FF:FF:FF:FF / ", "").replace("FF:FF:FF:FF:FF:FF","")
-                ToMAC=str(List_ToMAC[listsr]).replace(" / FF:FF:FF:FF:FF:FF","").replace("FF:FF:FF:FF:FF:FF / ", "").replace("FF:FF:FF:FF:FF:FF","")
-                ToMAC=str(ToMAC).replace(" / FF:FF:FF:FF:FF:7F","").replace("FF:FF:FF:FF:FF:7F / ", "").replace("FF:FF:FF:FF:FF:7F","")
-                printc (".",fcolor.BGreen + "Detected authentication sent from [ " + fcolor.BBlue + str(FrMAC) + fcolor.BGreen + " ] to [ " + fcolor.BBlue + str(ToMAC) + fcolor.BGreen + " ] with " + fcolor.BYellow + str(List_Auth[listsr]) + fcolor.BGreen + " authentication request detected","")
+                FrMAC=RemoveUnwantMAC(str(List_FrMAC[listsr]))
+                ToMAC=RemoveUnwantMAC(str(List_ToMAC[listsr]))
+                if int(List_Auth[listsr])<=80:
+                    print ""
+                    printc (".",fcolor.BGreen + "Detected authentication sent from [ " + fcolor.BBlue + str(FrMAC) + fcolor.BGreen + " ] to [ " + fcolor.BBlue + str(ToMAC) + fcolor.BGreen + " ] with " + fcolor.BYellow + str(List_Auth[listsr]) + fcolor.BGreen + " authentication request detected","")
+                else:
+                    print ""
+                    printc (".",fcolor.BGreen + "Unusual high amount of authentication sent from [ " + fcolor.BBlue + str(FrMAC) + fcolor.BGreen + " ] to [ " + fcolor.BBlue + str(ToMAC) + fcolor.BGreen + " ] with " + fcolor.BYellow + str(List_Auth[listsr]) + fcolor.BGreen + " authentication request detected","")
+                    printc (" ",fcolor.SWhite + "Note: If amount is too high, likely to be Authentication DOS.","")
+
                 AType="AUTH"
                 RtnESSID=GetMACDetail(FrMAC,ToMAC,AType)
             if int(List_Assoc[listsr])>=3:
                 Concern=Concern+1
-                FrMAC=str(List_FrMAC[listsr]).replace(" / FF:FF:FF:FF:FF:FF","").replace("FF:FF:FF:FF:FF:FF / ", "").replace("FF:FF:FF:FF:FF:FF","")
-                ToMAC=str(List_ToMAC[listsr]).replace(" / FF:FF:FF:FF:FF:FF","").replace("FF:FF:FF:FF:FF:FF / ", "").replace("FF:FF:FF:FF:FF:FF","")
-                ToMAC=str(ToMAC).replace(" / FF:FF:FF:FF:FF:7F","").replace("FF:FF:FF:FF:FF:7F / ", "").replace("FF:FF:FF:FF:FF:7F","")
+                FrMAC=RemoveUnwantMAC(str(List_FrMAC[listsr]))
+                ToMAC=RemoveUnwantMAC(str(List_ToMAC[listsr]))
+                print ""
                 printc (".",fcolor.BGreen + "Detected association sent from [ " + fcolor.BBlue + str(FrMAC) + fcolor.BGreen + " ] to [ " + fcolor.BBlue + str(ToMAC) + fcolor.BGreen + " ] with " + fcolor.BYellow + str(List_Auth[listsr]) + fcolor.BGreen + " association request detected","")
                 AType="ASSOC"
                 RtnESSID=GetMACDetail(FrMAC,ToMAC,AType)
@@ -2923,14 +3106,52 @@ def AnalyseCaptured():
                 Concern=Concern+1
                 WPSDetected=1
                 AWPS="1"
-                FrMAC=str(List_FrMAC[listsr]).replace(" / FF:FF:FF:FF:FF:FF","").replace("FF:FF:FF:FF:FF:FF / ", "").replace("FF:FF:FF:FF:FF:FF","")
-                ToMAC=str(List_ToMAC[listsr]).replace(" / FF:FF:FF:FF:FF:FF","").replace("FF:FF:FF:FF:FF:FF / ", "").replace("FF:FF:FF:FF:FF:FF","")
-                ToMAC=str(ToMAC).replace(" / FF:FF:FF:FF:FF:7F","").replace("FF:FF:FF:FF:FF:7F / ", "").replace("FF:FF:FF:FF:FF:7F","")
+                FrMAC=RemoveUnwantMAC(str(List_FrMAC[listsr]))
+                ToMAC=RemoveUnwantMAC(str(List_ToMAC[listsr]))
                 print ""
                 printc (".",fcolor.BGreen + "EAP communication between AP and client sending from [ " + fcolor.BBlue + str(FrMAC) + fcolor.BGreen + " ] to [ " + fcolor.BBlue + str(ToMAC) + fcolor.BGreen + " ] with " + fcolor.BYellow + str(List_WPS[listsr]) + fcolor.BGreen + " EAP packets detected","")
                 AType="EAP"
                 RtnESSID=GetMACDetail(FrMAC,ToMAC,AType)
                 printc (" ",fcolor.SWhite + "Note: If constantly seeing EAP communication between this two devices, it is likely that a WPS bruteforce is in progress..","")
+
+            if int(List_SSIDCT[listsr])>=2:
+                Concern=Concern+1
+                RAPDetected=1
+                ARAP="1"
+                FrMAC=str(List_FrMAC[listsr])
+                ToMAC=str(List_ToMAC[listsr])
+
+                if ToMAC!="":
+                    TMC=[]
+                    AList=List_SSID[listsr] + ", "
+                    TMC=AList.split(",")
+                    FM="0"
+                    if List_SSIDCT[listsr]=="2" or List_SSIDCT[listsr]=="3":
+                       if List_SSIDCT[listsr]=="3":
+                           if len(TMC[0].lstrip().rstrip())==len(TMC[1].lstrip().rstrip()) and len(TMC[1].lstrip().rstrip())==len(TMC[2].lstrip().rstrip()):
+                               FM="1"
+                               Concern=Concern-1
+                       else:
+                           if len(TMC[0].lstrip().rstrip())==len(TMC[1].lstrip().rstrip()):
+                               Concern=Concern-1
+                               FM="1"
+                    if FM=="0":
+                        print ""
+                        printc (".",fcolor.BGreen + "Suspect Rogue AP using [ " + fcolor.BBlue + str(FrMAC) + fcolor.BGreen + " ] and responsed to [ " + fcolor.BBlue + str(ToMAC) + fcolor.BGreen + " ] using " + fcolor.BYellow + str(List_SSIDCT[listsr]) + fcolor.BGreen + " different SSID Name.","")
+                        printc (".",fcolor.BGreen + "Broadcasted SSID Name  [ " + fcolor.BBlue + str(List_SSID[listsr]) + fcolor.BGreen + " ]...","")
+                        AType="RAP"
+                        RtnESSID=GetMACDetail(FrMAC,ToMAC,AType)
+                        printc (" ",fcolor.SWhite + "Note: If names look quite similar, it is unlikely to be Rogue AP as due to lost/malfunction packets.","")
+
+                if ToMAC=="":
+                    print ""
+                    printc (".",fcolor.BGreen + "Suspect Beacon Flood with MAC Address [ " + fcolor.BBlue + str(FrMAC) + fcolor.BGreen + " ] with " + fcolor.BYellow + str(List_SSIDCT[listsr]) + fcolor.BGreen + " different SSID Name.","")
+                    printc (".",fcolor.BGreen + "Broadcasted SSID Name  [ " + fcolor.BBlue + str(List_SSID[listsr]) + fcolor.BGreen + " ]...","")
+                    AType="BCF"
+
+
+
+
             listsr = listsr +1
     if Concern==0:
         Result=printc ("i","<$rs$>" + fcolor.BYellow + DateTimeStamp + " - " + fcolor.SGreen +  "Did not detect any suspicious activity ...","")
@@ -2999,6 +3220,8 @@ def UpdateClients():
                     Privacy=Privacy.replace('WPA2WPA','WPA2/WPA')
                     Privacy=Privacy.replace('WEP OPN','WEP (OPN)')
                     Cipher=Cipher.replace('CCMP TKIP','CCMP/TKIP')
+                    ESSID=CheckSSIDChr(ESSID)
+                    
 
                     if FS=="Station MAC":
                         CLIENTS=1
@@ -3088,6 +3311,9 @@ def UpdateClients():
                                         open(tmpfile,"a+b").write(str(ESTN) + ", " + str(EXAP) + ", " + str(ESID)  + "\n")                               
                         os.remove(clientfile)
                         os.rename(tmpfile,clientfile)
+                                  
+
+
 
 def ConvertPackets():
     captured_pcap=tmpdir + "captured"
@@ -3113,6 +3339,17 @@ def RewriteCSV():
                 line=line.replace("\00","")
                 open(newcaptured_csv,"a+b").write(line + "\n")
 
+
+
+def IsAscii(inputStr):
+    return all(ord(c) < 127 and ord(c) > 31 for c in inputStr)
+
+def CheckSSIDChr(ESSID_Name):
+    if IsAscii(ESSID_Name)==False:
+        ESSID_Name=""
+    return ESSID_Name
+    
+
 from random import randrange
 from math import floor
 global NullOut
@@ -3135,8 +3372,6 @@ tmpdir=appdir + "tmp/"
 PrevIconCount=0
 NullOut=" > /dev/null 2>&1"
 
- 
-
 try:
     global MONList
     MONList = []
@@ -3155,6 +3390,13 @@ try:
     CheckRequiredFiles()
     GetParameter("1")
     RETRY=0
+
+    if ReadPacketOnly=="1":
+        print "     Reading captured packet only..."
+        ConvertPackets()
+        AnalyseCaptured()
+        exit()
+
 
     ps=subprocess.Popen("ps -A | grep 'airodump-ng'" , shell=True, stdout=subprocess.PIPE)	
     Process=ps.stdout.read()
@@ -3192,14 +3434,12 @@ try:
 
     if MonCt==0:
         printc (".",fcolor.SGreen + "Enabling monitoring for [ " + fcolor.BRed + SELECTED_IFACE + fcolor.SGreen + " ]...","")
-
         ps=subprocess.Popen("ifconfig " + str(SELECTED_IFACE) + " down > /dev/null 2>&1", shell=True, stdout=subprocess.PIPE,stderr=open(os.devnull, 'w'))
         ps.wait()
         ps=subprocess.Popen("iwconfig " +  str(SELECTED_IFACE) + " mode monitor > /dev/null 2>&1", shell=True, stdout=subprocess.PIPE,stderr=open(os.devnull, 'w'))
         ps.wait()
         ps=subprocess.Popen("ifconfig " + str(SELECTED_IFACE) + " up > /dev/null 2>&1", shell=True, stdout=subprocess.PIPE,stderr=open(os.devnull, 'w'))
         ps.wait()
-        
         time.sleep (0.5)
         MonCt = GetInterfaceList("MON")
 
@@ -3224,14 +3464,16 @@ try:
 
     x=0
 
-    captured_pcap=tmpdir + "captured"
     while x<9999999:
+        captured_pcap=tmpdir + "captured"
         CaptureTraffic()
         ConvertPackets()
         AnalyseCaptured()
-        time.sleep(1)
+        time.sleep(0.3)
         x=x+1
     exit()
+
+
 
 except (KeyboardInterrupt, SystemExit):
     printd("KeyboardInterrupt - " + str(KeyboardInterrupt) + "\n        SystemExit - " + str(SystemExit))
@@ -3261,6 +3503,7 @@ except (KeyboardInterrupt, SystemExit):
             ps.wait()
             ps=subprocess.Popen("ifconfig " + str(IFaceList[Y]) + " up > /dev/null 2>&1", shell=True, stdout=subprocess.PIPE,stderr=open(os.devnull, 'w'))
             ps.wait()
+
             time.sleep(0.1)
         Y=Y+1
     ps=subprocess.Popen("killall 'airodump-ng' > /dev/null 2>&1" , shell=True, stdout=subprocess.PIPE)	
@@ -3269,3 +3512,4 @@ except (KeyboardInterrupt, SystemExit):
     time.sleep(0.1)
     printc ("i", fcolor.BWhite + "Please support and like my page at " + fcolor.BBlue + "https://www.facebook.com/syworks" +fcolor.BWhite + " (SYWorks-Programming)","")
     print ""
+   
