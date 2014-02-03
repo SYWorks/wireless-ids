@@ -23,8 +23,9 @@ Subsequent revision (Detection)
 
 Subsequent revision (Functions)
 ================================
-Allow logging of events to file.
-Allow disabling of displaying of probing devices
+* Allow logging of events to file.
+* Allow disabling of displaying of probing devices
+* Setting of scanning count..
 
 
 Visit and Like [my Facebook Page](https://www.facebook.com/syworks) for other updated information and tools.
