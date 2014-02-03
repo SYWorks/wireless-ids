@@ -8,8 +8,26 @@ Wireless IDS is an open source tool written in Python and work on Linux environm
 * Detection of changes in connection to anther access point which may have the possibility of connection to Rogue AP (User needs to assess the situation whether similar AP name)
 * Detects possible Rogue Access Point responding to probe by wireless devices in the surrounding.
 
+Subsequent revision (Detection)
+================================
+* Display similar Access Point's name (SSID) which could have the possibility of WiFi 'Evil Twins'.
+* Display of probing SSID by wireless devices
+* Detection of Korek Chopchop packets sent by Aircrack-NG (WEP attacks)
+* Detection of Fragmentation PRGA packets sent by Aircrack-NG (WEP attacks)
+* Detection of possible WPA Downgrade attack by MDK3
+* Detection of possible Michael Shutdown exploitation (TKIP) by MDK3
+* Detection of Beacon flooding by MDK3
+* Detection of possible Authentication DoS by MDK3
+* Detection of possible association flooding
+* Detection of WPA Migration Attack by Aircrack-NG (WPA Attack)
 
-Visit [my Facebook Page](https://www.facebook.com/syworks) for other updated information and tools.
+Subsequent revision (Functions)
+================================
+Allow logging of events to file.
+Allow disabling of displaying of probing devices
+
+
+Visit and Like [my Facebook Page](https://www.facebook.com/syworks) for other updated information and tools.
 
 Read Wiki for installation and other details (https://github.com/SYWorks/wireless-ids/wiki)
 
